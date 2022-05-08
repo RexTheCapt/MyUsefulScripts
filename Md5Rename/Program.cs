@@ -154,10 +154,18 @@ namespace Md5Rename
             Console.ForegroundColor = ConsoleColor.Gray;
             Console.Write("File moved: ");
 
-            if (file.Equals(newPath))
+            if (file.ToUpper().Equals(newPath.ToUpper()))
             {
                 Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine("Already named");
+                Console.Write("Already named");
+
+                if (!file.Equals(newPath))
+                {
+                    File.Move(file, $"{path}\\{newName}");
+                    Console.Write(" (capitalized)");
+                }
+
+                Console.WriteLine();
                 return newPath;
             }
             else if (File.Exists(newPath))

@@ -8,56 +8,58 @@ namespace Md5Rename
 {
     class Program
     {
-        private static string _path = null;
-        private static PathType _pathType;
+        private static string _path = Directory.GetCurrentDirectory();
+        private static PathType _pathType = PathType.Directory;
         private static bool _loop = false;
 
         static void Main(string[] args)
         {
+            #region Set variables
             for (int i = 0; i < args.Length; i++)
-            {
-                string arg = args[i];
-
-                if (arg.StartsWith("-"))
                 {
-                    if (arg.Equals("--loop", StringComparison.OrdinalIgnoreCase))
-                    {
-                        _loop = true;
-                    }
-                    else
-                    {
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine($"Unknown argument: \"{arg}\"");
-                        return;
-                    }
-                }
-                else
-                {
-                    if (_path == null)
-                    {
-                        _path = arg;
+                    string arg = args[i];
 
-                        if (File.Exists(_path))
+                    if (arg.StartsWith("-"))
+                    {
+                        if (arg.Equals("--loop", StringComparison.OrdinalIgnoreCase))
                         {
-                            _pathType = PathType.File;
-                            _path = Path.GetFullPath(_path);
-                        }
-                        else if (Directory.Exists(_path))
-                        {
-                            _pathType = PathType.Directory;
-                            _path = Path.GetFullPath(_path);
+                            _loop = true;
                         }
                         else
-                            _pathType = PathType.Invalid;
+                        {
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            Console.WriteLine($"Unknown argument: \"{arg}\"");
+                            return;
+                        }
                     }
                     else
                     {
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine("Invalid");
-                        return;
+                        if (_path == null)
+                        {
+                            _path = arg;
+
+                            if (File.Exists(_path))
+                            {
+                                _pathType = PathType.File;
+                                _path = Path.GetFullPath(_path);
+                            }
+                            else if (Directory.Exists(_path))
+                            {
+                                _pathType = PathType.Directory;
+                                _path = Path.GetFullPath(_path);
+                            }
+                            else
+                                _pathType = PathType.Invalid;
+                        }
+                        else
+                        {
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            Console.WriteLine("Invalid");
+                            return;
+                        }
                     }
                 }
-            }
+            #endregion
 
             if (_loop && _pathType != PathType.Directory)
             {
@@ -85,6 +87,8 @@ namespace Md5Rename
                     }
                     return;
             }
+
+            Console.ForegroundColor = ConsoleColor.Gray;
         }
 
         private static void HandlePath()
@@ -94,17 +98,22 @@ namespace Md5Rename
             bool firstRun = true;
             while (firstRun || _loop)
             {
-                foreach (var file in Directory.GetFiles(_path))
-                {
-                    if (File.GetLastWriteTime(file).AddSeconds(10) > DateTime.Now)
-                        continue;
+                List<string> files = new(Directory.GetFiles(_path));
 
-                    if (!registerFiles.Contains(file))
+                if (!files.Contains(Path.GetFullPath("DONT_MD5")))
+                    foreach (var file in files)
                     {
-                        registerFiles.Add(HandleFile(file));
-                        Console.WriteLine();
+                        if (File.GetLastWriteTime(file).AddSeconds(10) > DateTime.Now)
+                            continue;
+
+                        if (!registerFiles.Contains(file))
+                        {
+                            registerFiles.Add(HandleFile(file));
+                            Console.WriteLine();
+                        }
                     }
-                }
+                else
+                    throw new Exception("Found file \"DONT_MD5\", will do nothing");
 
                 for (int i = registerFiles.Count - 1; i >= 0; i--)
                 {
